@@ -14,14 +14,14 @@ headers = {
 }
 
 #connect to the MySQL database
-connection = pymysql.connect(host='localhost',
+connection = pymysql.connect(host=config.host,
                              user=config.user,
                              password=config.password,
-                             db='Pendo',
+                             db=config.database,
                              cursorclass=pymysql.cursors.DictCursor)
 
 sources = ["featureEvents", "guideEvents", "pageEvents", "pollEvents"]
-days_ago_count = XXX
+days_ago_count = config.days_ago.count
 
 #pull and write for each source for each day since days_ago_count days ago
 for j in range(days_ago_count):
