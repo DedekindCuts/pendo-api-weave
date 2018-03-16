@@ -4,7 +4,7 @@ import datetime
 import pymysql.cursors
 import config
 
-#make sure to edit the file "config.py" to include your MySQL database connection information and your Pendo API key
+#make sure to edit the file "config.py" to include your MySQL database connection information, your Pendo API key, and the time period for which you want to retrieve data
 
 #information for Pendo API
 url = "https://app.pendo.io/api/v1/aggregation"
@@ -12,6 +12,10 @@ headers = {
     'x-pendo-integration-key': config.pendo_key,
     'content-type': "application/json"
 }
+
+def date_ms(date):
+	dt = datetime.datetime.strptime(date, '%Y-%m-%d')
+	return str(dt.timestamp() * 1000)
 
 #connect to the MySQL database
 connection = pymysql.connect(host=config.host,
@@ -21,19 +25,20 @@ connection = pymysql.connect(host=config.host,
                              cursorclass=pymysql.cursors.DictCursor)
 
 sources = ["featureEvents", "guideEvents", "pageEvents", "pollEvents"]
-days_ago_count = config.days_ago.count
+first_date = date_ms(config.first_date)
+day_count = config.day_count
 
 #pull and write for each source for each day since days_ago_count days ago
-for j in range(days_ago_count):
+for j in range(day_count):
 	for source_name in sources:
-		data = "{\"response\":{\"mimeType\":\"application/json\"},\"request\":{\"pipeline\":[{\"source\":{\"" + source_name + "\":null,\"timeSeries\":{\"first\":\"now()-" + str(j + 1) + "*24*60*60*1000\",\"count\":1,\"period\":\"dayRange\"}}}]}}"
+		data = "{\"response\":{\"mimeType\":\"application/json\"},\"request\":{\"pipeline\":[{\"source\":{\"" + source_name + "\":null,\"timeSeries\":{\"first\":\"" + first_date + "+" + str(j) + "*24*60*60*1000\",\"count\":1,\"period\":\"dayRange\"}}}]}}"
 
 		#retrieve data from Pendo
 		response = requests.post(url, data = data, headers = headers)
 		response_dictionary = json.loads(response.content)
 
 		#check for error in retrieving data and check if response is empty
-		print(source_name, j + 1, "day(s) ago :", response)
+		print(source_name, "day", j + 1, response)
 		if(response_dictionary['results'] is not None):
 			#convert ms timestamps
 			if(source_name in ["featureEvents", "pageEvents"]):

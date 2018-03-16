@@ -7,6 +7,8 @@ host = "XXX"
 #Pendo API Key
 pendo_key = "XXX"
 
-#Number of days' worth of data to access from Pendo; counts the number of days before today.
-#So to get only data from yesterday, set days_ago_count = 1, to get data from yesterday and the day before, set days_ago_count = 2, etc.
-days_ago_count = 0
+#The first date for which you would like to retrieve data, in the format "YYYY-MM-DD"
+first_date = "YYYY-MM-DD"
+#The number of days (including the first day) for which you would like to retrieve data
+#For example, if you wanted data for the date that you entered for "first" and for the day after, set day_count = 2
+day_count = 1
