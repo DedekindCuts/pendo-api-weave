@@ -3,7 +3,7 @@ Some tools for interacting with the Pendo API
 
 ## Description
 
-### update_mysql
+### manual_update_mysql, auto_update_mysql
 Inserts data from Pendo into a MySQL database.
 
 ### pendo_csv
@@ -26,4 +26,6 @@ pip3 install pymysql
 
 ### Usage
 To use `pages.py`, `guides.py`, `features.py`, and `pendo_csv.py`, you will only need to edit `config.py` to suit your needs.
-In each of these cases, you will need to add your Pendo API key, and for `pendo_csv.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
+In each of these cases, you will need to add your Pendo API key, and for `pendo_csv.py` and `manual_update_mysql.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
+For `auto_update_mysql.py`, you will need an existing MySQL database with at least one record in the `page_events` table.
+Then `auto_update_mysql.py` will insert any new records created since the latest date recorded in that table.
