@@ -25,6 +25,5 @@ pip3 install pymysql
 ```
 
 ### Usage
-
 To use `pages.py`, `guides.py`, `features.py`, and `pendo_csv.py`, you will only need to edit `config.py` to suit your needs.
 In each of these cases, you will need to add your Pendo API key, and for `pendo_csv.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
