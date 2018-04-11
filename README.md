@@ -9,10 +9,6 @@ Inserts data from Pendo into a MySQL database.
 ### pendo_csv
 Writes data from Pendo to a collection of csv files.
 
-### pages, guides, features
-`pages.py` retrieves the names and IDs of all pages that are tracked on Pendo and writes them to a csv file.
-`guides.py` and `features.py` are similar.
-
 ## Getting Started
 
 ### Prerequisites
@@ -25,7 +21,10 @@ pip3 install pymysql
 ```
 
 ### Usage
-To use `pages.py`, `guides.py`, `features.py`, and `pendo_csv.py`, you will only need to edit `config.py` to suit your needs.
-In each of these cases, you will need to add your Pendo API key, and for `pendo_csv.py` and `manual_update_mysql.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
+For each of these, you will only need to edit `config.py` to suit your needs.
+You will need to add your Pendo API key, and for `pendo_csv.py` and `manual_update_mysql.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
 For `auto_update_mysql.py`, you will need an existing MySQL database with at least one record in the `page_events` table.
 Then `auto_update_mysql.py` will insert any new records created since the latest date recorded in that table.
+Both `auto_update_mysql.py` and `manual_update_mysql.py` will first update the lists of pages, features, and guides, adding any that are not already in the database.
+Then they will update the accounts and visitors tables, similarly adding any new records and updating any that have changed.
+Finally they will update the various events tables for each date in the requested range.
