@@ -24,6 +24,8 @@ def fix(dictionary, first, second):
 def nice_encode(string):
 	if isinstance(string, str):
 		return string.encode('utf-8')
+	elif string is None:
+		return ""
 	else:
 		return string
 
@@ -33,10 +35,16 @@ def nice_convert_timestamp(ts):
 	else:
 		return ts
 
-def first_date(connection):
+def first_date(connection, source):
 	cursor = connection.cursor()
-	sql = "SELECT DATE_ADD(DATE(MAX(`day`)), INTERVAL 1 DAY) AS `start_date` FROM page_events"
+	if source in ("feature", "page"):
+		sql = "SELECT DATE_ADD(DATE(MAX(`day`)), INTERVAL 1 DAY) AS `start_date` FROM " + source + "_events"
+	elif source in ("guide", "poll"):
+		sql = "SELECT DATE_ADD(DATE(MAX(`browserTime`)), INTERVAL 1 DAY) AS `start_date` FROM " + source + "_events"
+	else:
+		print("Source not recognized")
 	cursor.execute(sql)
+	cursor.close()
 	return cursor.fetchone()['start_date']
 
 def day_count(first_date):
@@ -66,6 +74,8 @@ def update_lists(connection):
 
 		print(source, "s written successfully", sep="")
 
+	cursor.close()
+
 def update_accounts(connection):
 	cursor = connection.cursor()
 
@@ -86,11 +96,12 @@ def update_accounts(connection):
 				fix(response_dictionary, first, second)
 
 	#insert data
-	sql = "REPLACE INTO `accounts` (`accountId`, `accountName`, `firstvisit`, `lastupdated`, `lastvisit`, `salesforceId`) VALUES (%s,%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO `accounts` (`accountId`, `accountName`, `firstvisit`, `lastupdated`, `lastvisit`, `salesforceId`) VALUES (%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE `lastupdated` = %s, `lastvisit` = %s"
 	for i in range(len(response_dictionary['results'])):
-		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['accountId']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['name']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['id'])))
+		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['accountId']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['name']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['id']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
 	connection.commit()
 
+	cursor.close()
 	print("accounts written successfully")
 
 def update_visitors(connection):
@@ -108,39 +119,44 @@ def update_visitors(connection):
 		fix(response_dictionary, 'auto', second)
 
 	#insert data
-	sql = "REPLACE INTO `visitors` (`visitorId`, `accountId`, `firstvisit`, `lastbrowsername`, `lastbrowserversion`, `lastoperatingsystem`, `lastservername`, `lastupdated`, `lastuseragent`, `lastvisit`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO `visitors` (`visitorId`, `accountId`, `firstvisit`, `lastbrowsername`, `lastbrowserversion`, `lastoperatingsystem`, `lastservername`, `lastupdated`, `lastuseragent`, `lastvisit`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE `lastbrowsername` = %s, `lastbrowserversion` = %s, `lastoperatingsystem` = %s, `lastservername` = %s, `lastupdated` = %s, `lastuseragent` = %s, `lastvisit` = %s"
 	for i in range(len(response_dictionary['results'])):
-		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['visitorId']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['accountid']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
+		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['visitorId']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['accountid']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
 	connection.commit()
 
+	cursor.close()
 	print("visitors written successfully")
 
-def update_events(connection, first_date, day_count):
+def update_events(connection):
 	cursor = connection.cursor()
 
 	#information for Pendo API
 	url = "https://app.pendo.io/api/v1/aggregation"
 	headers = {'x-pendo-integration-key': config.pendo_key, 'content-type': "application/json"}
 
-	sources = ["featureEvents", "guideEvents", "pageEvents", "pollEvents"]
+	sources = ["feature", "guide", "page", "poll"]
 
 	#pull and write for each source for each day
-	for j in range(day_count):
-		for source_name in sources:
-			data = "{\"response\":{\"mimeType\":\"application/json\"},\"request\":{\"pipeline\":[{\"source\":{\"" + source_name + "\":{\"eventClass\":[\"web\", \"ios\"]},\"timeSeries\":{\"first\":\"" + first_date + "+" + str(j) + "*24*60*60*1000\",\"count\":1,\"period\":\"dayRange\"}}}]}}"
+	for source_name in sources:
+		#get first_date and day_count by checking most recent dates in MySQL database
+		first = first_date(connection, source_name)
+		days = day_count(first)
+		first = date_ms(str(first))
+		for j in range(days):
+			data = "{\"response\":{\"mimeType\":\"application/json\"},\"request\":{\"pipeline\":[{\"source\":{\"" + source_name + "Events\":{\"eventClass\":[\"web\", \"ios\"]},\"timeSeries\":{\"first\":\"" + first + "+" + str(j) + "*24*60*60*1000\",\"count\":1,\"period\":\"dayRange\"}}}]}}"
 
 			#retrieve data from Pendo
 			response = requests.post(url, data = data, headers = headers)
 			response_dictionary = json.loads(response.content)
 
 			#check for error in retrieving data and check if response is empty
-			print(source_name, " day ", j + 1, ": ", response, sep="")
+			print(source_name, "s day ", j + 1, ": ", response, sep="")
 			if(response_dictionary['results'] is not None):
 				#convert ms timestamps
-				if(source_name in ["featureEvents", "pageEvents"]):
+				if(source_name in ["feature", "page"]):
 					for i in range(len(response_dictionary['results'])):
 						response_dictionary['results'][i]['day'] = datetime.datetime.fromtimestamp((response_dictionary['results'][i]['day'])/1000.0)
-				elif(source_name in ["guideEvents", "pollEvents"]):
+				elif(source_name in ["guide", "poll"]):
 					for i in range(len(response_dictionary['results'])):
 						response_dictionary['results'][i]['browserTime'] = datetime.datetime.fromtimestamp((response_dictionary['results'][i]['browserTime'])/1000.0)
 				else:
@@ -148,30 +164,32 @@ def update_events(connection, first_date, day_count):
 
 				#try to write to the appropriate MySQL table
 				try:
-					if(source_name == "featureEvents"):
+					if(source_name == "feature"):
 						sql = "INSERT INTO `feature_events` (`accountId`,`visitorId`,`numEvents`,`numMinutes`,`server`,`remoteIp`,`parameters`,`userAgent`,`day`,`appId`,`featureId`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 						for i in range(len(response_dictionary['results'])):
 							cursor.execute(sql,(response_dictionary['results'][i]['accountId'],response_dictionary['results'][i]['visitorId'],response_dictionary['results'][i]['numEvents'],response_dictionary['results'][i]['numMinutes'],response_dictionary['results'][i]['server'],response_dictionary['results'][i]['remoteIp'],response_dictionary['results'][i]['parameters'],response_dictionary['results'][i]['userAgent'],response_dictionary['results'][i]['day'],response_dictionary['results'][i]['appId'],response_dictionary['results'][i]['featureId']))
-					elif(source_name == "guideEvents"):
+					elif(source_name == "guide"):
 						sql = "INSERT INTO `guide_events` (`accountIds`,`browserTime`,`country`,`elementPath`,`eventId`,`type`,`guideId`,`guideStepId`,`latitude`,`loadTime`,`longitude`,`region`,`remoteIp`,`serverName`,`url`,`userAgent`,`visitorId`,`accountId`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 						for i in range(len(response_dictionary['results'])):
 							cursor.execute(sql,(response_dictionary['results'][i]['accountIds'],response_dictionary['results'][i]['browserTime'],response_dictionary['results'][i]['country'],response_dictionary['results'][i]['elementPath'],response_dictionary['results'][i]['eventId'],response_dictionary['results'][i]['type'],response_dictionary['results'][i]['guideId'],response_dictionary['results'][i]['guideStepId'],response_dictionary['results'][i]['latitude'],response_dictionary['results'][i]['loadTime'],response_dictionary['results'][i]['longitude'],response_dictionary['results'][i]['region'],response_dictionary['results'][i]['remoteIp'],response_dictionary['results'][i]['serverName'],response_dictionary['results'][i]['url'],response_dictionary['results'][i]['userAgent'],response_dictionary['results'][i]['visitorId'],response_dictionary['results'][i]['accountId']))
-					elif(source_name == "pageEvents"):
+					elif(source_name == "page"):
 						sql = "INSERT INTO `page_events` (`accountId`,`visitorId`,`numEvents`,`numMinutes`,`server`,`remoteIp`,`parameters`,`userAgent`,`day`,`appId`,`pageId`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 						for i in range(len(response_dictionary['results'])):
 							cursor.execute(sql,(response_dictionary['results'][i]['accountId'],response_dictionary['results'][i]['visitorId'],response_dictionary['results'][i]['numEvents'],response_dictionary['results'][i]['numMinutes'],response_dictionary['results'][i]['server'],response_dictionary['results'][i]['remoteIp'],response_dictionary['results'][i]['parameters'],response_dictionary['results'][i]['userAgent'],response_dictionary['results'][i]['day'],response_dictionary['results'][i]['appId'],response_dictionary['results'][i]['pageId']))
-					elif(source_name == "pollEvents"):
+					elif(source_name == "poll"):
 						sql = "INSERT INTO `poll_events` (`accountIds`,`browserTime`,`country`,`elementPath`,`eventId`,`type`,`guideId`,`guideStepId`,`latitude`,`loadTime`,`longitude`,`pollId`,`region`,`remoteIp`,`serverName`,`url`,`userAgent`,`visitorId`,`accountId`,`pollResponse`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
 						for i in range(len(response_dictionary['results'])):
 							cursor.execute(sql,(response_dictionary['results'][i]['accountIds'],response_dictionary['results'][i]['browserTime'],response_dictionary['results'][i]['country'],response_dictionary['results'][i]['elementPath'],response_dictionary['results'][i]['eventId'],response_dictionary['results'][i]['type'],response_dictionary['results'][i]['guideId'],response_dictionary['results'][i]['guideStepId'],response_dictionary['results'][i]['latitude'],response_dictionary['results'][i]['loadTime'],response_dictionary['results'][i]['longitude'],response_dictionary['results'][i]['pollId'],response_dictionary['results'][i]['region'],response_dictionary['results'][i]['remoteIp'],response_dictionary['results'][i]['serverName'],response_dictionary['results'][i]['url'],response_dictionary['results'][i]['userAgent'],response_dictionary['results'][i]['visitorId'],response_dictionary['results'][i]['accountId'],response_dictionary['results'][i]['pollResponse']))
 					else:
 						print("Error: Source not recognized")
 					connection.commit()
-					print(source_name, "written successfully")
+					print(source_name, "s written successfully", sep="")
 				except:
 					print("Error: Could not write to MySQL table")
 			else:
 				print("Response is empty")
+
+	cursor.close()
 
 #connect to the MySQL database
 connection = pymysql.connect(host=config.host,
@@ -179,11 +197,6 @@ connection = pymysql.connect(host=config.host,
                              password=config.password,
                              db=config.database,
                              cursorclass=pymysql.cursors.DictCursor)
-
-#get first_date and day_count by checking most recent dates in MySQL database
-first_date = first_date(connection)
-day_count = day_count(first_date)
-first_date = date_ms(str(first_date))
 
 #update pages, features, guides
 update_lists(connection)
@@ -193,7 +206,7 @@ update_accounts(connection)
 update_visitors(connection)
 
 #update feature, page, poll, and guide events
-update_events(connection, first_date, day_count)
+update_events(connection)
 
 #close the connection
 connection.close()

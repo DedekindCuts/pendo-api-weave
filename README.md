@@ -21,9 +21,11 @@ pip3 install pymysql
 ```
 
 ### Usage
+First, it is important to note that you will need to edit the columns in each table and which are written to each table (in `auto_` and `manual_update_mysql.py`) to account for the custom fields used by your organization.
+
 For each of these, you will only need to edit `config.py` to suit your needs.
 You will need to add your Pendo API key, and for `pendo_csv.py` and `manual_update_mysql.py` you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
-For `auto_update_mysql.py`, you will need an existing MySQL database with at least one record in the `page_events` table.
+For `auto_update_mysql.py`, you will need an existing MySQL database with at least one record in the each `_events` table.
 Then `auto_update_mysql.py` will insert any new records created since the latest date recorded in that table.
 Both `auto_update_mysql.py` and `manual_update_mysql.py` will first update the lists of pages, features, and guides, adding any that are not already in the database.
 Then they will update the accounts and visitors tables, similarly adding any new records and updating any that have changed.

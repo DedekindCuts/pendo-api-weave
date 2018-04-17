@@ -57,6 +57,8 @@ def update_lists(connection):
 
 		print(source, "s written successfully", sep="")
 
+	cursor.close()
+
 def update_accounts(connection):
 	cursor = connection.cursor()
 
@@ -77,11 +79,12 @@ def update_accounts(connection):
 				fix(response_dictionary, first, second)
 
 	#insert data
-	sql = "INSERT IGNORE INTO `accounts` (`accountId`, `accountName`, `firstvisit`, `lastupdated`, `lastvisit`, `salesforceId`) VALUES (%s,%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO `accounts` (`accountId`, `accountName`, `firstvisit`, `lastupdated`, `lastvisit`, `salesforceId`) VALUES (%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE `lastupdated` = %s, `lastvisit` = %s"
 	for i in range(len(response_dictionary['results'])):
-		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['accountId']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['name']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['id'])))
+		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['accountId']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['name']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['salesforce']['id']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
 	connection.commit()
 
+	cursor.close()
 	print("accounts written successfully")
 
 def update_visitors(connection):
@@ -99,11 +102,12 @@ def update_visitors(connection):
 		fix(response_dictionary, 'auto', second)
 
 	#insert data
-	sql = "INSERT IGNORE INTO `visitors` (`visitorId`, `accountId`, `firstvisit`, `lastbrowsername`, `lastbrowserversion`, `lastoperatingsystem`, `lastservername`, `lastupdated`, `lastuseragent`, `lastvisit`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)"
+	sql = "INSERT INTO `visitors` (`visitorId`, `accountId`, `firstvisit`, `lastbrowsername`, `lastbrowserversion`, `lastoperatingsystem`, `lastservername`, `lastupdated`, `lastuseragent`, `lastvisit`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) ON DUPLICATE KEY UPDATE `lastbrowsername` = %s, `lastbrowserversion` = %s, `lastoperatingsystem` = %s, `lastservername` = %s, `lastupdated` = %s, `lastuseragent` = %s, `lastvisit` = %s"
 	for i in range(len(response_dictionary['results'])):
-		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['visitorId']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['accountid']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
+		cursor.execute(sql,(nice_encode(response_dictionary['results'][i]['visitorId']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['accountid']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['firstvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowsername']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastbrowserversion']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastoperatingsystem']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastservername']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastupdated']), nice_encode(response_dictionary['results'][i]['metadata']['auto']['lastuseragent']), nice_convert_timestamp(response_dictionary['results'][i]['metadata']['auto']['lastvisit'])))
 	connection.commit()
 
+	cursor.close()
 	print("visitors written successfully")
 
 def update_events(connection, first_date, day_count):
@@ -163,6 +167,8 @@ def update_events(connection, first_date, day_count):
 					print("Error: Could not write to MySQL table")
 			else:
 				print("Response is empty")
+
+	cursor.close()
 
 #connect to the MySQL database
 connection = pymysql.connect(host=config.host,
