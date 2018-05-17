@@ -1,4 +1,4 @@
-# pendo-api
+# pendo-api-weave
 Some tools for interacting with the Pendo API to get and store Weave usage data
 
 ## Description
