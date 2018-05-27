@@ -10,7 +10,7 @@ Insert data from Pendo into a MySQL database.
 Writes data from Pendo to a collection of csv files.
 
 ### schema.sql
-Use to create a MySQL database that is appropriately formatted to be used with `auto_` and `manual_update_mysql.py`, with the table and column names referenced in those files.
+Can be used to create a MySQL database that is appropriately formatted to be used with `auto_` and `manual_update_mysql.py`, with the table and column names referenced in those files.
 It also contains the foreign keys describing the relationships between the tables and triggers for updating the `shortaccountId` columns (which are included only because of an issue with an older version of the Weave software which resulted in some users' account IDs being formatted to not contain dashes in the Pendo usage records.)
 
 ## Getting Started
@@ -44,7 +44,7 @@ You can easily do this using the included file `schema.sql`.
 mysql -u USERNAME -p < schema.sql
 ```
 
-Just replace `USERNAME` with your MySQL username, and remember that depending on where you have saved `schema.sql`, you may need to specify its full path.
+Just replace `USERNAME` with your MySQL username, and remember that depending on your current directory, you may need to specify the full path of `schema.sql`.
 
 #### Using `auto_` and `manual_update_mysql.py`
 In order to write to the MySQL database, you will need to edit `config.py` to include your MySQL credentials.
