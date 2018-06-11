@@ -53,7 +53,7 @@ Also if you are running MySQL locally, then set `host = "localhost"`.)
 
 If you are using `manual_update_mysql.py`, you will need to add the first date for which you would like to retrieve data and the number of days' worth of data that you would like to retrieve.
 
-For `auto_update_mysql.py`, your Pendo MySQL database will need at least one record in the each `_events` table.
+For `auto_update_mysql.py`, your Pendo MySQL database will need at least one record in each `_events` table.
 Then running `auto_update_mysql.py` will insert any new records created since the latest date recorded in that table.
 
 Both `auto_update_mysql.py` and `manual_update_mysql.py` will first update the lists of pages, features, and guides, adding any that are not already in the database.
