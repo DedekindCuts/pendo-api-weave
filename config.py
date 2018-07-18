@@ -7,6 +7,8 @@ host = "XXX"
 #Pendo API Key
 pendo_key = "XXX"
 
+#for manual_update_mysql.py only
+
 #The first date for which you would like to retrieve data, in the format "YYYY-MM-DD"
 first_date = "YYYY-MM-DD"
 #The number of days (including the first day) for which you would like to retrieve data

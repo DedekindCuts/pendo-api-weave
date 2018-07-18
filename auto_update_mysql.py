@@ -144,7 +144,7 @@ def update_events(connection, source_name):
 		response_dictionary = json.loads(response.content)
 
 		#check for error in retrieving data and check if response is empty
-		print(source_name, "s day ", j + 1, ": ", response, sep="")
+		print(source_name, " events day ", j + 1, ": ", response, sep="")
 		if(response_dictionary['results'] is not None):
 			#convert ms timestamps
 			if(source_name in ["feature", "page"]):
